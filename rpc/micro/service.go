@@ -66,11 +66,17 @@ func newService(app Application, opts ...Option) Service {
 		streamInterceptors = append(streamInterceptors, serverinterceptor.StreamLimitInterceptor(options.limiter))
 	}
 
+	if options.breaker != nil && options.accecptable != nil {
+		unaryInterceptors = append(unaryInterceptors, serverinterceptor.UnaryBreakerInterceptor(options.breaker, options.accecptable))
+		streamInterceptors = append(streamInterceptors, serverinterceptor.StreamBreakerInterceptor(options.breaker, options.accecptable))
+	}
+
 	if len(options.openTraceAddress) > 0 {
 		trace.InitOpentracing(options.serverName, options.openTraceAddress)
 		unaryInterceptors = append(unaryInterceptors, serverinterceptor.UnaryOpentracingInterceptor())
 		streamInterceptors = append(streamInterceptors, serverinterceptor.StreamOpentracingInterceptor())
 	}
+
 	grpcOptions := []grpc.ServerOption{}
 	grpcOptions = append(grpcOptions,
 		grpc.ChainUnaryInterceptor(unaryInterceptors...),
