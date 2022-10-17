@@ -46,12 +46,12 @@ func logDuration(ctx context.Context, method string, req interface{}, duration t
 
 	_, ok = notLoggingContentMethods.Load(method)
 	if !ok {
-		mh := meta.MessageHeadContext(ctx)
+		requestId := meta.GetReuqestId(ctx)
 		content, err := json.Marshal(req)
 		if err != nil {
 			logrus.WithContext(ctx).Errorf("%s - %s", addr, err.Error())
 		} else if duration > time.Duration(slowThreshold) {
-			logrus.Warnf("[RPC-SlowCall] [Cost:%v] [RequestId:%s] %s -> %s - %s", duration, mh.RequestID, addr, method, string(content))
+			logrus.Warnf("[RPC-SlowCall] [Cost:%v] [RequestId:%s] %s -> %s - %s", duration, requestId, addr, method, string(content))
 		}
 	}
 }
