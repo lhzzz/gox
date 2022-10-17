@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 	"singer.com/basic/breaker"
 	"singer.com/basic/limit"
@@ -39,11 +40,12 @@ type Options struct {
 	enableKeepAlivePolicy bool          //使能keepalive EnforcementPolicy
 	kaep                  keepalive.EnforcementPolicy
 	kasp                  keepalive.ServerParameters
-	limiter               limit.Limiter      //限流器
-	breaker               breaker.Breaker    //熔断器
-	accecptable           breaker.Acceptable //熔断依据
-	preRunHooks           []func() error     //服务启动前需要执行的操作
-	preShutdownHooks      []func() error     //服务停止时需要执行的操作
+	limiter               limit.Limiter                    //限流器
+	breaker               breaker.Breaker                  //熔断器
+	accecptable           breaker.Acceptable               //熔断依据
+	preRunHooks           []func() error                   //服务启动前需要执行的操作
+	preShutdownHooks      []func() error                   //服务停止时需要执行的操作
+	creds                 credentials.TransportCredentials //安全证书
 }
 
 type Option func(*Options)

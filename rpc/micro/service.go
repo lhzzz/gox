@@ -87,6 +87,9 @@ func newService(app Application, opts ...Option) Service {
 	if options.enableKeepAlivePolicy {
 		grpcOptions = append(grpcOptions, grpc.KeepaliveEnforcementPolicy(options.kaep))
 	}
+	if options.creds != nil {
+		grpcOptions = append(grpcOptions, grpc.Creds(options.creds))
+	}
 	grpcSvr := grpc.NewServer(grpcOptions...)
 
 	app.Regist(grpcSvr)
