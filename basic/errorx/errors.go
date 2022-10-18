@@ -1,9 +1,12 @@
 package errorx
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/pkg/errors"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 /**
@@ -29,6 +32,10 @@ type CodeError struct {
 	errMsg  string    //内部错误信息
 }
 
+const (
+	kErrorxTrailerKey = "errorx-message"
+)
+
 //返回给前端的错误码
 func (e *CodeError) GetErrCode() ErrorCode {
 	return e.errCode
@@ -41,6 +48,10 @@ func (e *CodeError) GetUsrMsg() string {
 
 func (e *CodeError) Error() string {
 	return fmt.Sprintf("ErrCode:%d, ErrMsg:%s", e.errCode, e.errMsg)
+}
+
+func (e *CodeError) SetTrailer(ctx context.Context) {
+	grpc.SetTrailer(ctx, metadata.Pairs(kErrorxTrailerKey, e.errMsg))
 }
 
 func NewErrCodeMsg(errCode ErrorCode, errMsg string) *CodeError {

@@ -18,6 +18,7 @@ func UnaryErrorInterceptor(ctx context.Context, req interface{}, info *grpc.Unar
 		if e, ok := causeErr.(*errorx.CodeError); ok { //自定义错误类型
 			//转成grpc err
 			err = status.Error(codes.Code(e.GetErrCode()), e.GetUsrMsg())
+			e.SetTrailer(ctx)
 		}
 		logrus.Errorf("[RPC-ERR] %+v", err)
 	}
