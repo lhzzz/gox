@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"singer.com/basic/trace"
 )
@@ -36,14 +37,18 @@ func keyExistMD(md metadata.MD, key string) bool {
 }
 
 func generateMetaTraceID(ctx context.Context) context.Context {
+	var traceId string
 	md, exist := metadata.FromIncomingContext(ctx)
 	if !exist {
 		md = metadata.New(nil)
 	}
 	if !keyExistMD(md, kMetadataKeyRequestID) {
-		traceId := newTraceId(ctx)
+		traceId = newTraceId(ctx)
 		md.Set(kMetadataKeyRequestID, traceId)
+	} else {
+		traceId = md.Get(kMetadataKeyRequestID)[0]
 	}
 	ctx = metadata.NewIncomingContext(ctx, md)
+	grpc.SetTrailer(ctx, metadata.Pairs(kMetadataKeyRequestID, traceId))
 	return ctx
 }

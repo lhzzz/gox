@@ -29,6 +29,5 @@ func (ss serverStream) Context() context.Context {
 func GenerateContextTraceMetadata(ctx context.Context, method string) context.Context {
 	generateMetadataMtx.Lock()
 	defer generateMetadataMtx.Unlock()
-	ctx = generateMetaTraceID(ctx)
-	return ctx
+	return generateMetaTraceID(ctx)
 }
