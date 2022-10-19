@@ -20,8 +20,9 @@ const (
 )
 
 type HystrixConfig struct {
-	Cmd    hystrix.CommandConfig
-	Accept Acceptable //判断错误码是否需要计入错误统计中
+	Cmd      hystrix.CommandConfig
+	Accept   Acceptable        //判断错误码是否需要计入错误统计中
+	Fallback func(error) error //保底措施
 }
 
 type hystrixPrefixBreaker struct {
@@ -65,10 +66,6 @@ func NewHystrixConfig(accept func(err error) bool) HystrixConfig {
 }
 
 func (hpb *hystrixPrefixBreaker) Do(method string, req func() error) error {
-	return hpb.DoWithFallback(method, req, nil)
-}
-
-func (hpb *hystrixPrefixBreaker) DoWithFallback(method string, req func() error, fallback func(err error) error) error {
 	if strings.HasPrefix(method, hpb.Prefix) {
 		var retErr error
 		var callback func() error
@@ -85,7 +82,7 @@ func (hpb *hystrixPrefixBreaker) DoWithFallback(method string, req func() error,
 		} else {
 			callback = req
 		}
-		_ = hystrix.Do(hpb.Prefix, callback, fallback)
+		_ = hystrix.Do(hpb.Prefix, callback, hpb.Config.Fallback)
 		return retErr
 	} else {
 		return req()
@@ -108,10 +105,6 @@ func NewMutiHystrixBreaker(configs map[string]HystrixConfig) Breaker {
 }
 
 func (hmb *hystrixMutiBreaker) Do(method string, req func() error) error {
-	return hmb.DoWithFallback(method, req, nil)
-}
-
-func (hmb *hystrixMutiBreaker) DoWithFallback(method string, req func() error, fallback func(err error) error) error {
 	if config, ok := hmb.Configs[method]; ok {
 		var retErr error
 		var callback func() error
@@ -127,7 +120,7 @@ func (hmb *hystrixMutiBreaker) DoWithFallback(method string, req func() error, f
 		} else {
 			callback = req
 		}
-		_ = hystrix.Do(method, callback, fallback)
+		_ = hystrix.Do(method, callback, config.Fallback)
 		return retErr
 	} else {
 		return req()
