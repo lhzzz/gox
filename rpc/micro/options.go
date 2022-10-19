@@ -23,23 +23,23 @@ var deafultKasp = keepalive.ServerParameters{
 }
 
 type Options struct {
-	serverName            string        //服务名
-	listenOn              string        //服务启动地址
-	metricListenAddr      string        //统计监听地址
-	metricName            string        //统计名
-	enableMetric          bool          //使能统计
-	logListenAddr         string        //动态修改日志级别的监听地址
-	enableLogServer       bool          //使能日志监听
-	slowThreshold         time.Duration //慢日志阈值
-	openTraceAddress      string        //调用链服务地址
-	pprofListenAddr       string        //pprof监听地址
-	enablePProf           bool          //使能pprof
-	timeout               int64         //超时退出机制
-	maxRecvMsgSize        int           //设置rpc所能接受的最大消息长度
-	maxSendMsgSize        int           //设置rpc所能发送的最大消息长度
-	enableKeepAlivePolicy bool          //使能keepalive EnforcementPolicy
-	kaep                  keepalive.EnforcementPolicy
-	kasp                  keepalive.ServerParameters
+	serverName            string                           //服务名
+	listenOn              string                           //服务启动地址
+	metricListenAddr      string                           //统计监听地址
+	metricName            string                           //统计名
+	enableMetric          bool                             //使能统计
+	logListenAddr         string                           //动态修改日志级别的监听地址
+	enableLogServer       bool                             //使能日志监听
+	slowThreshold         time.Duration                    //慢日志阈值
+	openTraceAddress      string                           //调用链服务地址
+	pprofListenAddr       string                           //pprof监听地址
+	enablePProf           bool                             //使能pprof
+	timeout               int64                            //超时退出机制
+	maxRecvMsgSize        int                              //设置rpc所能接受的最大消息长度
+	maxSendMsgSize        int                              //设置rpc所能发送的最大消息长度
+	enableKeepAlivePolicy bool                             //使能keepalive EnforcementPolicy
+	kaep                  keepalive.EnforcementPolicy      //强行执行策略
+	kasp                  keepalive.ServerParameters       //keepalive 服务端参数
 	limiter               limit.Limiter                    //限流器
 	breaker               breaker.Breaker                  //熔断器
 	accecptable           breaker.Acceptable               //熔断依据

@@ -68,14 +68,17 @@ func (c *client) dialOptions(opts ...ClientOption) []grpc.DialOption {
 	}
 
 	if opt.breaker != nil && opt.accept != nil {
-		unaryInterceptors = append(unaryInterceptors, clientinterceptor.BreakerInterceptor(opt.breaker, opt.accept))
+		unaryInterceptors = append(unaryInterceptors, clientinterceptor.UnaryBreakerInterceptor(opt.breaker, opt.accept))
 	}
 	if opt.slowThreshold > 0 {
 		clientinterceptor.SetSlowThreshold(opt.slowThreshold)
-		unaryInterceptors = append(unaryInterceptors, clientinterceptor.SlowlogInterceptor)
+		unaryInterceptors = append(unaryInterceptors, clientinterceptor.UnarySlowlogInterceptor)
 	}
 	if opt.timeout > 0 {
-		unaryInterceptors = append(unaryInterceptors, clientinterceptor.TimeoutInterceptor(opt.timeout))
+		unaryInterceptors = append(unaryInterceptors, clientinterceptor.UnaryTimeoutInterceptor(opt.timeout))
+	}
+	if opt.retryConf != nil {
+		unaryInterceptors = append(unaryInterceptors, clientinterceptor.UnaryRetryInterceptor(*opt.retryConf))
 	}
 	gOptions = append(gOptions, grpc.WithChainUnaryInterceptor(unaryInterceptors...))
 	gOptions = append(gOptions, grpc.WithChainStreamInterceptor(streamInterceptors...))

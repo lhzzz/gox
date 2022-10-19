@@ -21,7 +21,7 @@ func SetSlowThreshold(d time.Duration) {
 }
 
 // SlowlogInterceptor is an interceptor that logs the processing time.
-func SlowlogInterceptor(ctx context.Context, method string, req, reply interface{},
+func UnarySlowlogInterceptor(ctx context.Context, method string, req, reply interface{},
 	cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 	serverName := path.Join(cc.Target(), method)
 	start := time.Now()

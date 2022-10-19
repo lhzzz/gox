@@ -27,7 +27,7 @@ func TestTimeoutInterceptor(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			cc := new(grpc.ClientConn)
-			interceptor := TimeoutInterceptor(3 * time.Second)
+			interceptor := UnaryTimeoutInterceptor(3 * time.Second)
 			err := interceptor(context.Background(), "/foo", nil, nil, cc, func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn,
 				opts ...grpc.CallOption) error {
 				timer := time.NewTimer(test.duration)

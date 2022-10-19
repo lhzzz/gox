@@ -7,6 +7,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"singer.com/basic/breaker"
+	"singer.com/rpc/clientinterceptor"
 )
 
 type ClientOptions struct {
@@ -21,6 +22,7 @@ type ClientOptions struct {
 	maxRecvMsgSize int                              //最大接受消息大小
 	maxSendMsgSize int                              //最大发送消息大小
 	creds          credentials.TransportCredentials //连接证书
+	retryConf      *clientinterceptor.RetryConfigs  //重试配置
 }
 
 type ClientOption func(co *ClientOptions)
@@ -90,5 +92,11 @@ func WithMaxRecvMsgSize(maxRecv int) ClientOption {
 func WithCreds(creds credentials.TransportCredentials) ClientOption {
 	return func(co *ClientOptions) {
 		co.creds = creds
+	}
+}
+
+func WithRetry(retries map[string]clientinterceptor.RetryConfig) ClientOption {
+	return func(co *ClientOptions) {
+		co.retryConf = &clientinterceptor.RetryConfigs{Configs: retries}
 	}
 }

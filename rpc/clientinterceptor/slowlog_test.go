@@ -22,7 +22,7 @@ func TestSlowlogInterceptor(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			cc := new(grpc.ClientConn)
-			err := SlowlogInterceptor(context.Background(), "/foo", nil, nil, cc,
+			err := UnarySlowlogInterceptor(context.Background(), "/foo", nil, nil, cc,
 				func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn,
 					opts ...grpc.CallOption) error {
 					time.Sleep(time.Second * 3)
