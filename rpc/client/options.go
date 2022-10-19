@@ -16,7 +16,6 @@ type ClientOptions struct {
 	enableTrace    bool                             //分布式调用链追踪
 	enableMeta     bool                             //元数据携带
 	breaker        breaker.Breaker                  //熔断器
-	accept         breaker.Acceptable               //熔断依据
 	timeout        time.Duration                    //超时调用
 	slowThreshold  time.Duration                    //慢日志阈值
 	maxRecvMsgSize int                              //最大接受消息大小
@@ -52,10 +51,9 @@ func EnableMeta() ClientOption {
 	}
 }
 
-func WithBreaker(bkr breaker.Breaker, accept breaker.Acceptable) ClientOption {
+func WithBreaker(bkr breaker.Breaker) ClientOption {
 	return func(co *ClientOptions) {
 		co.breaker = bkr
-		co.accept = accept
 	}
 }
 

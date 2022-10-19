@@ -42,7 +42,6 @@ type Options struct {
 	kasp                  keepalive.ServerParameters       //keepalive 服务端参数
 	limiter               limit.Limiter                    //限流器
 	breaker               breaker.Breaker                  //熔断器
-	accecptable           breaker.Acceptable               //熔断依据
 	preRunHooks           []func() error                   //服务启动前需要执行的操作
 	preShutdownHooks      []func() error                   //服务停止时需要执行的操作
 	creds                 credentials.TransportCredentials //安全证书
@@ -140,5 +139,11 @@ func Timeout(timeout int64) Option {
 func Limiter(l limit.Limiter) Option {
 	return func(o *Options) {
 		o.limiter = l
+	}
+}
+
+func Breaker(b breaker.Breaker) Option {
+	return func(o *Options) {
+		o.breaker = b
 	}
 }

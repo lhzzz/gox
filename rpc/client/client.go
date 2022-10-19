@@ -67,8 +67,8 @@ func (c *client) dialOptions(opts ...ClientOption) []grpc.DialOption {
 		streamInterceptors = append(streamInterceptors, clientinterceptor.StreamMetaInterceptor)
 	}
 
-	if opt.breaker != nil && opt.accept != nil {
-		unaryInterceptors = append(unaryInterceptors, clientinterceptor.UnaryBreakerInterceptor(opt.breaker, opt.accept))
+	if opt.breaker != nil {
+		unaryInterceptors = append(unaryInterceptors, clientinterceptor.UnaryBreakerInterceptor(opt.breaker))
 	}
 	if opt.slowThreshold > 0 {
 		clientinterceptor.SetSlowThreshold(opt.slowThreshold)

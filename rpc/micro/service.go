@@ -66,9 +66,9 @@ func newService(app Application, opts ...Option) Service {
 		streamInterceptors = append(streamInterceptors, serverinterceptor.StreamLimitInterceptor(options.limiter))
 	}
 
-	if options.breaker != nil && options.accecptable != nil {
-		unaryInterceptors = append(unaryInterceptors, serverinterceptor.UnaryBreakerInterceptor(options.breaker, options.accecptable))
-		streamInterceptors = append(streamInterceptors, serverinterceptor.StreamBreakerInterceptor(options.breaker, options.accecptable))
+	if options.breaker != nil {
+		unaryInterceptors = append(unaryInterceptors, serverinterceptor.UnaryBreakerInterceptor(options.breaker))
+		streamInterceptors = append(streamInterceptors, serverinterceptor.StreamBreakerInterceptor(options.breaker))
 	}
 
 	if len(options.openTraceAddress) > 0 {

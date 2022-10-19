@@ -81,16 +81,3 @@ func PairsToMetricsLables(kv ...interface{}) []metrics.Label {
 	}
 	return MapToMetricsLables(maps)
 }
-
-// MetricsMilliSecondsCost 上报某个函数执行的耗时
-// 调用方式
-// func fake() {
-// 	defer MetricsMilliSecondsCost(metrics.AddSampleWithLabels, []string{"searchManager"}, "appId", zhst.AppID_AppID_HUMMINGBIRD, "alg", zhst.AlgorithmVersion_VERSION_BNN_PRO_ATTR_SCORE)()
-// 	// cost operation
-// }
-func MetricsMilliSecondsCost(metricscb metricsFunc, key []string, kv ...interface{}) func() {
-	start := time.Now()
-	return func() {
-		metricscb(key, float32(time.Since(start).Milliseconds()), PairsToMetricsLables(kv))
-	}
-}
