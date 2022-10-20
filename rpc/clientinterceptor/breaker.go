@@ -15,3 +15,14 @@ func UnaryBreakerInterceptor(bkr breaker.Breaker) grpc.UnaryClientInterceptor {
 		})
 	}
 }
+
+func StreamBreakerInterceptor(bkr breaker.Breaker) grpc.StreamClientInterceptor {
+	return func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (cs grpc.ClientStream, err error) {
+		err = bkr.Do(method, func() error {
+			var err error
+			cs, err = streamer(ctx, desc, cc, method, opts...)
+			return err
+		})
+		return cs, err
+	}
+}
