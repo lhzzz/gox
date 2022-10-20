@@ -6,7 +6,6 @@ type Acceptable func(err error) bool
 type Breaker interface {
 	// Do runs the given request if the Breaker accepts it.
 	// Do returns an error instantly if the Breaker rejects the request.
-	// If a panic occurs in the request, the Breaker handles it as an error
-	// and causes the same panic again.
+	// If a panic occurs in the request, the Breaker will panic .
 	Do(method string, req func() error) error
 }

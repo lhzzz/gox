@@ -8,9 +8,9 @@ import (
 
 const (
 	// defaultTimeout is how long to wait for command to complete, in milliseconds
-	defaultTimeout = 1000
+	defaultTimeout = 100000000
 	// defaultMaxConcurrent is how many commands of the same type can run at the same time
-	defaultMaxConcurrent = 10
+	defaultMaxConcurrent = 100000000
 	// defaultVolumeThreshold is the minimum number of requests needed before a circuit can be tripped due to health
 	defaultVolumeThreshold = 20
 	// defaultSleepWindow is how long, in milliseconds, to wait after a circuit opens before testing for recovery
@@ -21,8 +21,8 @@ const (
 
 type HystrixConfig struct {
 	Cmd      hystrix.CommandConfig
-	Accept   Acceptable        //判断错误码是否需要计入错误统计中
-	Fallback func(error) error //保底措施
+	Accept   Acceptable        //判断错误是否需要计入错误统计中
+	Fallback func(error) error // 失败处理逻辑，访问其他资源失败时，或者处于熔断开启状态时，会调用这段逻辑
 }
 
 type hystrixPrefixBreaker struct {
@@ -36,8 +36,8 @@ type hystrixMutiBreaker struct {
 
 var (
 	defaultHystrixCmdConfig = hystrix.CommandConfig{
-		Timeout:                defaultTimeout,               // 接口请求的超时时间，单位ms
-		MaxConcurrentRequests:  defaultMaxConcurrent,         // 最大并发请求
+		Timeout:                defaultTimeout,               // 接口请求的超时时间，单位ms，超过超时时间直接返回错误
+		MaxConcurrentRequests:  defaultMaxConcurrent,         // 最大并发请求,超过并发直接返回错误
 		SleepWindow:            defaultSleepWindow,           // 在熔断器被打开后，根据SleepWindow设置的时间控制多久后尝试服务是否可用，单位是ms
 		RequestVolumeThreshold: defaultVolumeThreshold,       // 请求数量达到阈值后，会根据统计结果判断熔断
 		ErrorPercentThreshold:  defaultErrorPercentThreshold, // 统计错误百分比，请求数量大于等于RequestVolumeThreshold并且错误率到达这个百分比后就会启动熔断，范围0-100
@@ -57,11 +57,18 @@ func NewPrefixHystrixBreaker(prefix string, conf HystrixConfig) Breaker {
 	}
 }
 
-// accept： accept the error will mark called success by breaker
-func NewHystrixConfig(accept func(err error) bool) HystrixConfig {
+// 	requestThreshold: 		请求数量达到阈值后，会根据统计结果判断熔断
+// 	errorPercentThreshold:	统计错误百分比，请求数量大于等于RequestVolumeThreshold并且错误率到达这个百分比后就会启动熔断
+// 	accept： 				错误是否要被熔断统计,可为nil
+// 	fallback: 				保底措施，触发熔断后执行这段逻辑，为nil则不执行,直接返回熔断错误(hystrix: circuit open)
+func NewHystrixConfig(requestThreshold, errorPercentThreshold int, accept func(err error) bool, fallback func(error) error) HystrixConfig {
+	cmd := defaultHystrixCmdConfig
+	cmd.RequestVolumeThreshold = requestThreshold
+	cmd.ErrorPercentThreshold = errorPercentThreshold
 	return HystrixConfig{
-		Accept: accept,
-		Cmd:    defaultHystrixCmdConfig,
+		Accept:   accept,
+		Fallback: fallback,
+		Cmd:      cmd,
 	}
 }
 
@@ -69,21 +76,29 @@ func (hpb *hystrixPrefixBreaker) Do(method string, req func() error) error {
 	if strings.HasPrefix(method, hpb.Prefix) {
 		var retErr error
 		var callback func() error
+		var accept bool
 		if hpb.Config.Accept != nil {
 			callback = func() error {
 				retErr = req()
 				//如果设置了accept，且认为错误并不统计熔断中，则直接返回nil
-				if hpb.Config.Accept(retErr) {
-					return nil
-				} else {
-					return retErr
+				if retErr != nil {
+					if hpb.Config.Accept(retErr) {
+						accept = true
+						return nil
+					} else {
+						return retErr
+					}
 				}
+				return retErr
 			}
 		} else {
 			callback = req
 		}
-		_ = hystrix.Do(hpb.Prefix, callback, hpb.Config.Fallback)
-		return retErr
+		hyerr := hystrix.Do(hpb.Prefix, callback, hpb.Config.Fallback)
+		if accept {
+			hyerr = retErr
+		}
+		return hyerr
 	} else {
 		return req()
 	}
@@ -91,10 +106,10 @@ func (hpb *hystrixPrefixBreaker) Do(method string, req func() error) error {
 
 //muti breaker
 //is designed for muti rpc interface, like:
-//											map[string]HystrixConfig{
-//												"/api.BackEndService/Create": HystrixConfig1,
-//												"/api.BackEndService/Update": HystrixConfig2,
-//											}
+//	map[string]HystrixConfig{
+//		"/api.BackEndService/Create": HystrixConfig1,
+//		"/api.BackEndService/Update": HystrixConfig2,
+//	}
 func NewMutiHystrixBreaker(configs map[string]HystrixConfig) Breaker {
 	for method, config := range configs {
 		hystrix.ConfigureCommand(method, config.Cmd)
@@ -108,20 +123,28 @@ func (hmb *hystrixMutiBreaker) Do(method string, req func() error) error {
 	if config, ok := hmb.Configs[method]; ok {
 		var retErr error
 		var callback func() error
+		var accept bool
 		if config.Accept != nil {
 			callback = func() error {
 				retErr = req()
-				if config.Accept(retErr) {
-					return nil
-				} else {
-					return retErr
+				if retErr != nil {
+					if config.Accept(retErr) {
+						accept = true
+						return nil
+					} else {
+						return retErr
+					}
 				}
+				return retErr
 			}
 		} else {
 			callback = req
 		}
-		_ = hystrix.Do(method, callback, config.Fallback)
-		return retErr
+		hyerr := hystrix.Do(method, callback, config.Fallback)
+		if accept {
+			hyerr = retErr
+		}
+		return hyerr
 	} else {
 		return req()
 	}
