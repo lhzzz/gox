@@ -17,3 +17,13 @@ func TestUnaryCrashInterceptor(t *testing.T) {
 		})
 	})
 }
+
+func TestStreamCrashInterceptor(t *testing.T) {
+	assert.NotPanics(t, func() {
+		StreamCrashInterceptor(nil, nil, &grpc.StreamServerInfo{
+			FullMethod: "/StreamCrash",
+		}, func(srv interface{}, stream grpc.ServerStream) error {
+			panic("stream crash")
+		})
+	})
+}
