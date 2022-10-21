@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/afex/hystrix-go/hystrix"
+	"singer.com/basic/hystrix"
 )
 
 func TestPrefixBreaker(t *testing.T) {

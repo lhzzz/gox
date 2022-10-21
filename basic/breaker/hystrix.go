@@ -3,7 +3,7 @@ package breaker
 import (
 	"strings"
 
-	"github.com/afex/hystrix-go/hystrix"
+	"singer.com/basic/hystrix"
 )
 
 const (
@@ -44,7 +44,7 @@ var (
 	}
 )
 
-// prefix： 服务名前缀   如果熔断单个接口，则直接填 /api.BackEndService/Create
+// prefix： 服务名前缀   如果熔断某个服务某个类型接口，则填 /api.BackEndService/Create
 //						如果熔断整个服务，则填 "/api.BackEndService"
 //						如果熔断某块后台微服务，则填 "/api" (网关)
 //						如果熔断整个后台，则填 "/"  (网关)

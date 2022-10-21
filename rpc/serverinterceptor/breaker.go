@@ -11,9 +11,9 @@ import (
 func UnaryBreakerInterceptor(bkr breaker.Breaker) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		err = bkr.Do(info.FullMethod, func() error {
-			var err error
-			resp, err = handler(ctx, req)
-			return err
+			var herr error
+			resp, herr = handler(ctx, req)
+			return herr
 		})
 		return resp, err
 	}
@@ -22,9 +22,8 @@ func UnaryBreakerInterceptor(bkr breaker.Breaker) grpc.UnaryServerInterceptor {
 // StreamLimitInterceptor returns a new stream server interceptor that performs rate limiting on the request.
 func StreamBreakerInterceptor(bkr breaker.Breaker) grpc.StreamServerInterceptor {
 	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
-		err = bkr.Do(info.FullMethod, func() error {
+		return bkr.Do(info.FullMethod, func() error {
 			return handler(srv, stream)
 		})
-		return err
 	}
 }
