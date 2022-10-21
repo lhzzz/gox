@@ -14,6 +14,9 @@ import (
 )
 
 // UnaryTimeoutInterceptor returns a func that sets timeout to incoming unary requests.
+// And you Should know the Interceptor will run handler in a goroutine so that if your rpc handler
+// is time consuming , it will occur goroutine leak temporarily, the solution is your rpc handler
+// should check the context done, and finish it
 func UnaryTimeoutInterceptor(timeout time.Duration) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler) (interface{}, error) {
