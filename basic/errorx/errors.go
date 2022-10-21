@@ -66,8 +66,20 @@ func NewErrMsg(errMsg string) *CodeError {
 	return &CodeError{errCode: SERVER_COMMON_ERROR, errMsg: errMsg}
 }
 
-func Wrapf(ce *CodeError, format string, args ...interface{}) error {
-	return errors.Wrapf(ce, format, args...)
+func Wrap(code ErrorCode, msg string) error {
+	ce := CodeError{
+		errCode: code,
+		errMsg:  msg,
+	}
+	return errors.WithStack(&ce)
+}
+
+func Wrapf(code ErrorCode, format string, args ...interface{}) error {
+	ce := CodeError{
+		errCode: code,
+		errMsg:  fmt.Sprintf(format, args...),
+	}
+	return errors.WithStack(&ce)
 }
 
 func Cause(err error) error {
