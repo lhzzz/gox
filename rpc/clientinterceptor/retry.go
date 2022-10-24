@@ -54,16 +54,16 @@ func UnaryRetryInterceptor(rc RetryConfigs) grpc.UnaryClientInterceptor {
 				if lastErr == nil {
 					return nil
 				}
-				logrus.Error(parentCtx, "grpc_retry attempt: %d, got err: %v", attempt, lastErr)
+				logrus.Errorf("grpc_retry method:%s attempt: %d, got err: %v", method, attempt, lastErr)
 				if isContextError(lastErr) {
 					if parentCtx.Err() != nil {
-						logrus.Error(parentCtx, "grpc_retry attempt: %d, parent context error: %v", attempt, parentCtx.Err())
+						logrus.Errorf("grpc_retry method:%s attempt: %d, parent context error: %v", method, attempt, parentCtx.Err())
 						// its the parent context deadline or cancellation.
 						return lastErr
 					} else if config.perCallTimeout != 0 {
 						// We have set a perCallTimeout in the retry middleware, which would result in a context error if
 						// the deadline was exceeded, in which case try again.
-						logrus.Error(parentCtx, "grpc_retry attempt: %d, context error from retry call", attempt)
+						logrus.Errorf("grpc_retry method:%s attempt: %d, context error from retry call", method, attempt)
 						continue
 					}
 				}
@@ -71,18 +71,18 @@ func UnaryRetryInterceptor(rc RetryConfigs) grpc.UnaryClientInterceptor {
 					return lastErr
 				}
 			}
+			return lastErr
 		}
-		return nil
 	}
 }
 
 func waitRetryBackoff(attempt uint, parentCtx context.Context, rc *RetryConfig) error {
 	var waitTime time.Duration = 0
-	if attempt > 0 {
+	if attempt > 0 && rc.backoffFunc != nil {
 		waitTime = rc.backoffFunc(parentCtx, attempt)
 	}
 	if waitTime > 0 {
-		logrus.Info(parentCtx, "grpc_retry attempt: %d, backoff for %v", attempt, waitTime)
+		logrus.Infof("grpc_retry attempt: %d, backoff for %v", attempt, waitTime)
 		timer := time.NewTimer(waitTime)
 		select {
 		case <-parentCtx.Done():
