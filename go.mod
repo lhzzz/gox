@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/armon/go-metrics v0.4.1
+	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/gin-gonic/gin v1.8.1
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
