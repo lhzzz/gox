@@ -163,7 +163,7 @@ func GoC(ctx context.Context, name string, run runFuncC, fallback fallbackFuncC)
 			cmd.runDuration = time.Since(runStart)
 			returnTicket()
 			if runErr != nil {
-				cmd.errorWithFallback(ctx, runErr)
+				cmd.error(ctx, runErr)
 				return
 			}
 			cmd.reportEvent("success")
@@ -279,6 +279,24 @@ func (c *command) errorWithFallback(ctx context.Context, err error) {
 	if fallbackErr != nil {
 		c.errChan <- fallbackErr
 	}
+}
+
+func (c *command) error(ctx context.Context, err error) {
+	eventType := "failure"
+	if err == ErrCircuitOpen {
+		eventType = "short-circuit"
+	} else if err == ErrMaxConcurrency {
+		eventType = "rejected"
+	} else if err == ErrTimeout {
+		eventType = "timeout"
+	} else if err == context.Canceled {
+		eventType = "context_canceled"
+	} else if err == context.DeadlineExceeded {
+		eventType = "context_deadline_exceeded"
+	}
+
+	c.reportEvent(eventType)
+	c.errChan <- err
 }
 
 func (c *command) tryFallback(ctx context.Context, err error) error {
