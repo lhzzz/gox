@@ -19,6 +19,7 @@ require (
 	github.com/spf13/viper v1.13.0
 	github.com/stretchr/testify v1.8.0
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
+	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 	google.golang.org/grpc v1.50.1
 	gorm.io/driver/mysql v1.4.3
 	gorm.io/gorm v1.24.0
