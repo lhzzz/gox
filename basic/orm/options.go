@@ -24,6 +24,9 @@ type dbOption struct {
 	ignoreNotFoundError bool
 	slowThreshold       time.Duration
 	mysqlOptions        MySQLOptions
+	maxOpenConn         int
+	maxIdleConns        int
+	maxLifetime         time.Duration
 }
 
 type Option func(do *dbOption)
@@ -34,6 +37,9 @@ var defaultDbOptions = dbOption{
 	dialect:             MySQL,
 	slowThreshold:       time.Second,
 	ignoreNotFoundError: true,
+	maxOpenConn:         50,
+	maxIdleConns:        10,
+	maxLifetime:         time.Hour,
 }
 
 func (do *dbOption) MySQLDSN() string {
@@ -48,15 +54,15 @@ func MysqlOptions(options MySQLOptions) Option {
 	}
 }
 
-func SetDebug(debug bool) Option {
+func DebugMode() Option {
 	return func(do *dbOption) {
-		do.debugMode = debug
+		do.debugMode = true
 	}
 }
 
-func SetSigularTable(enable bool) Option {
+func SigularTable() Option {
 	return func(do *dbOption) {
-		do.sigularTable = enable
+		do.sigularTable = true
 	}
 }
 
@@ -69,5 +75,13 @@ func EnableRecordNotFoundError() Option {
 func SlowThreshold(d time.Duration) Option {
 	return func(do *dbOption) {
 		do.slowThreshold = d
+	}
+}
+
+func MaxLimit(maxOpenConn, maxIdleConn int, maxLifetime time.Duration) Option {
+	return func(do *dbOption) {
+		do.maxOpenConn = maxOpenConn
+		do.maxIdleConns = maxIdleConn
+		do.maxLifetime = maxLifetime
 	}
 }

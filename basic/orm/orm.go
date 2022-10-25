@@ -12,21 +12,22 @@ import (
 	gormopentracing "gorm.io/plugin/opentracing"
 )
 
-func logrusLevelToOrmLevel(logruslevel logrus.Level) logger.LogLevel {
-	return logger.Info
-}
-
 func OpenDB(opt ...Option) (*gorm.DB, error) {
 	opts := defaultDbOptions
 	for _, o := range opt {
 		o(&opts)
 	}
 
+	lvl := logger.Warn
+	if opts.debugMode {
+		lvl = logger.Info
+	}
+
 	logger := logger.New(
 		logrus.StandardLogger(),
 		logger.Config{
 			SlowThreshold:             opts.slowThreshold,
-			LogLevel:                  logrusLevelToOrmLevel(logrus.GetLevel()),
+			LogLevel:                  lvl,
 			IgnoreRecordNotFoundError: opts.ignoreNotFoundError,
 			Colorful:                  true,
 		},
@@ -58,25 +59,30 @@ func OpenDB(opt ...Option) (*gorm.DB, error) {
 		}
 		sqlDB, err := db.DB()
 		if err != nil {
-			return nil, errors.New("db connpool is not a ping interface")
+			return nil, err
 		}
 
-		var dbError error
-		maxAttempts := 10
+		var retryErr error
+		var maxAttempts = 10
 		for attempts := 1; attempts <= maxAttempts; attempts++ {
-			dbError := sqlDB.Ping()
-			if dbError == nil {
+			retryErr = sqlDB.Ping()
+			if retryErr == nil {
 				break
 			}
-			logrus.Warnf("ping failed,err=%v, left retry times=%d", dbError, maxAttempts-attempts)
+			logrus.Warnf("ping failed,err=%v, left retry times=%d", retryErr, maxAttempts-attempts)
 			time.Sleep(time.Duration(attempts) * time.Second)
 		}
-		if dbError != nil {
+		if retryErr != nil {
 			sqlDB.Close()
-			return nil, dbError
+			return nil, retryErr
 		}
 	}
 
+	//setMax limit
+	sqlDB, _ := db.DB()
+	sqlDB.SetMaxOpenConns(opts.maxOpenConn)
+	sqlDB.SetMaxIdleConns(opts.maxIdleConns)
+	sqlDB.SetConnMaxLifetime(opts.maxLifetime)
 	err = db.Use(gormopentracing.New())
 	if err != nil {
 		logrus.Error("gormopentracing err ", err)
