@@ -34,7 +34,7 @@ type Options struct {
 	openTraceAddress      string                           //调用链服务地址
 	pprofListenAddr       string                           //pprof监听地址
 	enablePProf           bool                             //使能pprof
-	timeout               int64                            //超时退出机制
+	timeout               time.Duration                    //超时退出机制
 	maxRecvMsgSize        int                              //设置rpc所能接受的最大消息长度
 	maxSendMsgSize        int                              //设置rpc所能发送的最大消息长度
 	enableKeepAlivePolicy bool                             //使能keepalive EnforcementPolicy
@@ -130,7 +130,7 @@ func SetKeepAliveEnforcementPolicy(kaep keepalive.EnforcementPolicy) Option {
 	}
 }
 
-func Timeout(timeout int64) Option {
+func Timeout(timeout time.Duration) Option {
 	return func(o *Options) {
 		o.timeout = timeout
 	}
@@ -145,5 +145,17 @@ func Limiter(l limit.Limiter) Option {
 func Breaker(b breaker.Breaker) Option {
 	return func(o *Options) {
 		o.breaker = b
+	}
+}
+
+func PreRunHooks(hooks ...func() error) Option {
+	return func(o *Options) {
+		o.preRunHooks = hooks
+	}
+}
+
+func PreShutdownHooks(hooks ...func() error) Option {
+	return func(o *Options) {
+		o.preShutdownHooks = hooks
 	}
 }

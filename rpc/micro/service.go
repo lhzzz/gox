@@ -3,7 +3,6 @@ package micro
 import (
 	"fmt"
 	"net"
-	"time"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -49,16 +48,18 @@ func newService(app Application, opts ...Option) Service {
 
 	unaryInterceptors := []grpc.UnaryServerInterceptor{
 		serverinterceptor.UnaryGenerateMetadataInterceptor,
-		serverinterceptor.UnarySlowlogInterceptor(),
 		serverinterceptor.UnaryCrashInterceptor,
+		serverinterceptor.UnaryErrorInterceptor,
+		serverinterceptor.UnarySlowlogInterceptor(),
 	}
 	streamInterceptors := []grpc.StreamServerInterceptor{
 		serverinterceptor.StreamGenerateMetadataInterceptor,
 		serverinterceptor.StreamCrashInterceptor,
+		serverinterceptor.StreamErrorInterceptor,
 	}
 
 	if options.timeout > 0 {
-		unaryInterceptors = append(unaryInterceptors, serverinterceptor.UnaryTimeoutInterceptor(time.Duration(options.timeout)*time.Millisecond))
+		unaryInterceptors = append(unaryInterceptors, serverinterceptor.UnaryTimeoutInterceptor(options.timeout))
 	}
 
 	if options.limiter != nil {
@@ -151,6 +152,7 @@ func (s *service) NonBlockingRun(shutdown <-chan struct{}) (<-chan struct{}, err
 	if err != nil {
 		return nil, err
 	}
+	logrus.Info("server listen on:", s.opts.listenOn)
 	serverShutdown := make(chan struct{})
 	go func() {
 		defer close(serverShutdown)

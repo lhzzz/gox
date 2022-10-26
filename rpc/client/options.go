@@ -11,17 +11,16 @@ import (
 )
 
 type ClientOptions struct {
-	block          bool                             //连接是否阻塞
-	dialOptions    []grpc.DialOption                //grpc 连接options
-	enableTrace    bool                             //分布式调用链追踪
-	enableMeta     bool                             //元数据携带
-	breaker        breaker.Breaker                  //熔断器
-	timeout        time.Duration                    //超时调用
-	slowThreshold  time.Duration                    //慢日志阈值
-	maxRecvMsgSize int                              //最大接受消息大小
-	maxSendMsgSize int                              //最大发送消息大小
-	creds          credentials.TransportCredentials //连接证书
-	retryConf      *clientinterceptor.RetryConfigs  //重试配置
+	block         bool                             //连接是否阻塞
+	dialOptions   []grpc.DialOption                //grpc 连接options
+	enableTrace   bool                             //分布式调用链追踪
+	enableMeta    bool                             //元数据携带
+	breaker       breaker.Breaker                  //熔断器
+	timeout       time.Duration                    //超时调用
+	slowThreshold time.Duration                    //慢日志阈值
+	maxMsgSize    int                              //最大消息大小
+	creds         credentials.TransportCredentials //连接证书
+	retryConf     *clientinterceptor.RetryConfigs  //重试配置
 }
 
 type ClientOption func(co *ClientOptions)
@@ -63,7 +62,7 @@ func WithSlowThreshold(d time.Duration) ClientOption {
 	}
 }
 
-func WithTime(d time.Duration) ClientOption {
+func WithTimeout(d time.Duration) ClientOption {
 	return func(co *ClientOptions) {
 		co.timeout = d
 	}
@@ -75,15 +74,9 @@ func WithBlock() ClientOption {
 	}
 }
 
-func WithMaxSendMsgSize(maxSend int) ClientOption {
+func WithMaxMsgSize(max int) ClientOption {
 	return func(co *ClientOptions) {
-		co.maxSendMsgSize = maxSend
-	}
-}
-
-func WithMaxRecvMsgSize(maxRecv int) ClientOption {
-	return func(co *ClientOptions) {
-		co.maxRecvMsgSize = maxRecv
+		co.maxMsgSize = max
 	}
 }
 

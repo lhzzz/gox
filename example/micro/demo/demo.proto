@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package demo;
+option go_package=".;demo";
+
+message Request {
+    string msg = 1;
+}
+
+message Response {
+    string data = 1;
+}
+
+
+service DemoService {
+    rpc Get(Request) returns (Response);
+}

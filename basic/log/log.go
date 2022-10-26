@@ -17,10 +17,11 @@ func init() {
 	//初始化日志
 	log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
-		ForceColors:     true,
-		FullTimestamp:   true,
-		DisableQuote:    true,
-		TimestampFormat: "2006-01-02 15:04:05 ",
+		QuoteEmptyFields: true, //empty field will set in ""
+		ForceColors:      true,
+		FullTimestamp:    true,
+		DisableQuote:     true,
+		TimestampFormat:  "2006-01-02 15:04:05 ",
 		CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
 			//处理函数名
 			fs := strings.Split(frame.Function, ".")

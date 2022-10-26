@@ -52,11 +52,8 @@ func (c *client) dialOptions(opts ...ClientOption) []grpc.DialOption {
 	if opt.block {
 		gOptions = append(gOptions, grpc.WithBlock())
 	}
-	if opt.maxSendMsgSize > 0 {
-		gOptions = append(gOptions, grpc.MaxCallSendMsgSize(opt.maxSendMsgSize))
-	}
-	if opt.maxRecvMsgSize > 0 {
-		gOptions = append(gOptions, grpc.MaxCallRecvMsgSize(opt.maxRecvMsgSize))
+	if opt.maxMsgSize > 0 {
+		gOptions = append(gOptions, grpc.WithMaxMsgSize(opt.maxMsgSize))
 	}
 
 	unaryInterceptors := make([]grpc.UnaryClientInterceptor, 0)
