@@ -3,10 +3,8 @@ package serverinterceptor
 import (
 	"context"
 
-	"github.com/sirupsen/logrus"
 	"singer.com/basic/errorx"
-	"singer.com/basic/meta"
-	"singer.com/util/color"
+	"singer.com/basic/log"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -17,7 +15,7 @@ import (
 func UnaryErrorInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 	resp, err = handler(ctx, req)
 	if err != nil {
-		logrus.WithField("RequestId", meta.GetReuqestId(ctx)).Errorf("%s %+v", color.RedStr("RPC-ERR"), err)
+		log.RpcErrorf(ctx, "%+v", err)
 		causeErr := errorx.Cause(err)                  // err类型
 		if e, ok := causeErr.(*errorx.CodeError); ok { //自定义错误类型
 			//转成grpc err
@@ -31,7 +29,7 @@ func UnaryErrorInterceptor(ctx context.Context, req interface{}, info *grpc.Unar
 func StreamErrorInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 	err := handler(srv, ss)
 	if err != nil {
-		logrus.WithField("RequestId", meta.GetReuqestId(ss.Context())).Errorf("%s %+v", color.RedStr("[RPC-ERR]"), err)
+		log.RpcErrorf(ss.Context(), "%+v", err)
 		causeErr := errorx.Cause(err)                  // err类型
 		if e, ok := causeErr.(*errorx.CodeError); ok { //自定义错误类型
 			//转成grpc err

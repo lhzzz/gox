@@ -3,12 +3,10 @@ package serverinterceptor
 import (
 	"context"
 
-	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"singer.com/basic/meta"
-	"singer.com/util/color"
+	"singer.com/basic/log"
 )
 
 // StreamCrashInterceptor catches panics in processing stream requests and recovers.
@@ -38,6 +36,6 @@ func handleCrash(handler func(interface{})) {
 }
 
 func toPanicError(ctx context.Context, r interface{}) error {
-	logrus.WithField("RequestId", meta.GetReuqestId(ctx)).Errorf("%s %+v\n", color.RedStr("[RPC-PANIC]"), r)
+	log.RpcPanicf(ctx, " %+v\n", r)
 	return status.Error(codes.Internal, "panic")
 }

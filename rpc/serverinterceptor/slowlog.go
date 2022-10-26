@@ -7,11 +7,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
-	"singer.com/basic/meta"
-	"singer.com/util/color"
+	"singer.com/basic/log"
 )
 
 const defaultSlowThreshold int64 = int64(time.Millisecond * 500)
@@ -47,12 +45,11 @@ func logDuration(ctx context.Context, method string, req interface{}, duration t
 
 	_, ok = notLoggingContentMethods.Load(method)
 	if !ok {
-		requestId := meta.GetReuqestId(ctx)
 		content, err := json.Marshal(req)
 		if err != nil {
-			logrus.WithField("RequestId", requestId).Errorf("%s - %s", addr, err.Error())
+			log.RpcErrorf(ctx, "%s - %s", addr, err.Error())
 		} else if duration > time.Duration(slowThreshold) {
-			logrus.WithField("Cost", duration).WithField("RequestId", requestId).Warnf("%s %s -> %s - %s", color.YollowStr("[RPC-SlowCall]"), addr, method, string(content))
+			log.RpcSlowf(ctx, duration, "%s -> %s - %s", addr, method, string(content))
 		}
 	}
 }
