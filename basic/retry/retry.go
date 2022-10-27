@@ -26,9 +26,11 @@ var kRetry = retry{ebo: &backoff.ExponentialBackOff{
 	Clock:               backoff.SystemClock,
 }}
 
-//第一次调用: current = InitialInterval
-//next call time:  random(current * (1- RandomizationFactor), current * (1 + RandomizationFactor)) * Multiplier
-//exit: current >= MaxElapsedTime
+/*
+Note: it's not thread-safe
+ next call time:  random(current * (1- 0.5), current * (1 + 0.5)) * 1.5
+ exit: current >= MaxElapsedTime
+*/
 func NewRetry(initInterval, maxInterval, maxElapsedTime time.Duration) Retry {
 	bo := backoff.NewExponentialBackOff()
 	bo.InitialInterval = initInterval
