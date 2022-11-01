@@ -11,8 +11,8 @@ if [ -z ${IMAGE} ]; then
   exit 1
 fi
 
-if [ -z ${VERSION} ]; then
-  echo "Please provide VERSION."
+if [ -z ${CI_PIPELINE_ID} ]; then
+  echo "Please provide CI_PIPELINE_ID."
   exit 1
 fi
 
@@ -21,16 +21,12 @@ DES_REGISTRY=${REGISTRY_PREFIX}/${CI_PROJECT_NAME}
 for platform in ${PLATFORMS}; do
   os=${platform%_*}
   arch=${platform#*_}
-  variant=""
-#  if [ ${arch} == "arm64" ]; then
-#    variant="--variant unknown"
-#  fi
 
-  docker manifest create --amend ${DES_REGISTRY}:${IMAGE}-${CI_COMMIT_REF_NAME_FIX}-${CI_PIPELINE_ID} \
+  docker manifest create --amend --insecure ${DES_REGISTRY}:${IMAGE}-${CI_COMMIT_REF_NAME_FIX}-${CI_PIPELINE_ID} \
     ${DES_REGISTRY}-${arch}:${IMAGE}-${CI_COMMIT_REF_NAME_FIX}-${CI_PIPELINE_ID}
 
   docker manifest annotate ${DES_REGISTRY}:${IMAGE}-${CI_COMMIT_REF_NAME_FIX}-${CI_PIPELINE_ID} \
 		${DES_REGISTRY}-${arch}:${IMAGE}-${CI_COMMIT_REF_NAME_FIX}-${CI_PIPELINE_ID} \
-		--os ${os} --arch ${arch} ${variant}
+		--os ${os} --arch ${arch}
 done
-docker manifest push --purge ${DES_REGISTRY}:${IMAGE}-${CI_COMMIT_REF_NAME_FIX}-${CI_PIPELINE_ID}
+docker manifest push --purge --insecure ${DES_REGISTRY}:${IMAGE}-${CI_COMMIT_REF_NAME_FIX}-${CI_PIPELINE_ID}

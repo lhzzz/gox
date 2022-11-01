@@ -67,7 +67,7 @@ clean:
 
 .PHONY: release.build
 release.build:
-	make push.multiarch
+	@$(MAKE) push.multiarch
 
 ## help: Show this help info.
 .PHONY: help

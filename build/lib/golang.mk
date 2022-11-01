@@ -33,6 +33,7 @@ endif
 .PHONY: go.build.%
 go.build.%:
 	$(eval COMMAND := $(word 2,$(subst ., ,$*)))
+	$(eval PLATFORM := $(word 1,$(subst ., ,$*)))
 	$(eval OS := $(word 1,$(subst _, ,$(PLATFORM))))
 	$(eval ARCH := $(word 2,$(subst _, ,$(PLATFORM))))
 

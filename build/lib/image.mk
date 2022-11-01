@@ -43,13 +43,17 @@ image.daemon.verify:
 	fi
 
 .PHONY: image.build
-image.build: go.build.verify $(addprefix image.build., $(addprefix $(IMAGE_PLAT)., $(IMAGES)))
+image.build: $(addprefix image.build., $(addprefix $(IMAGE_PLAT)., $(IMAGES)))
 
 .PHONY: image.build.multiarch
-image.build.multiarch: go.build.verify $(foreach p,$(PLATFORMS),$(addprefix image.build., $(addprefix $(p)., $(IMAGES))))
+image.build.multiarch: $(foreach p,$(PLATFORMS),$(addprefix image.build., $(addprefix $(p)., $(IMAGES))))
 
 .PHONY: image.build.%
-image.build.%: go.build.%
+# image.build.%: go.build.%
+image.build.%:
+	$(eval COMMAND := $(word 2,$(subst ., ,$*)))
+	$(eval PLATFORM := $(word 1,$(subst ., ,$*)))
+	$(eval ARCH := $(word 2,$(subst _, ,$(PLATFORM))))
 	$(eval IMAGE := $(COMMAND))
 	$(eval IMAGE_PLAT := $(subst _,/,$(PLATFORM)))
 	@echo "===========> Building docker image $(IMAGE) $(CI_PIPELINE_ID) for $(IMAGE_PLAT)"
@@ -67,20 +71,19 @@ image.build.%: go.build.%
 	@rm -rf $(TMP_DIR)/$(IMAGE)
 
 .PHONY: image.push
-image.push: image.verify go.build.verify $(addprefix image.push., $(addprefix $(IMAGE_PLAT)., $(IMAGES)))
+image.push: $(addprefix image.push., $(addprefix $(IMAGE_PLAT)., $(IMAGES)))
 
 .PHONY: image.push.multiarch
-image.push.multiarch: image.verify go.build.verify $(foreach p,$(PLATFORMS),$(addprefix image.push., $(addprefix $(p)., $(IMAGES)))) 
+image.push.multiarch: $(foreach p,$(PLATFORMS),$(addprefix image.push., $(addprefix $(p)., $(IMAGES)))) 
 
 .PHONY: image.push.%
 image.push.%: image.build.%
-	@echo "===========> Pushing image $(IMAGE)-$(CI_COMMIT_REF_NAME_FIX)-$(CI_PIPELINE_ID) to $(REGISTRY_PREFIX)"
-	$(DOCKER) push $(REGISTRY_PREFIX)/$(CI_PROJECT_NAME):$(IMAGE)-$(CI_COMMIT_REF_NAME_FIX)-$(CI_PIPELINE_ID)
+	@echo "===========> Pushing image $(IMAGE)-$(CI_COMMIT_REF_NAME_FIX)-$(CI_PIPELINE_ID) to $(REGISTRY_PREFIX)/$(CI_PROJECT_NAME)-$(ARCH)"
+	$(DOCKER) push $(REGISTRY_PREFIX)/$(CI_PROJECT_NAME)-$(ARCH):$(IMAGE)-$(CI_COMMIT_REF_NAME_FIX)-$(CI_PIPELINE_ID)
 
 .PHONY: image.manifest.push
 image.manifest.push: export DOCKER_CLI_EXPERIMENTAL := enabled
-image.manifest.push: image.verify go.build.verify \
-$(addprefix image.manifest.push., $(addprefix $(IMAGE_PLAT)., $(IMAGES)))
+image.manifest.push: $(addprefix image.manifest.push., $(addprefix $(IMAGE_PLAT)., $(IMAGES)))
 
 .PHONY: image.manifest.push.%
 image.manifest.push.%: image.push.% image.manifest.remove.%
