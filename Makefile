@@ -60,6 +60,10 @@ manifest:
 manifest.multiarch:
 	@$(MAKE) image.manifest.push.multiarch
 
+.PHONY: buildx.multiarch
+buildx.multiarch:
+	@$(MAKE) image.buildx.push.multiarch
+
 ## clean: Remove all files that are created by building.
 .PHONY: clean
 clean:

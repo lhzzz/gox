@@ -12,9 +12,11 @@ ifeq ($(origin CI_PROJECT_NAME), undefined)
 CI_PROJECT_NAME := go-server
 endif
 
-ifeq ($(origin CI_COMMIT_REF_NAME_FIX), undefined)
-CI_COMMIT_REF_NAME_FIX := $(shell git symbolic-ref --short HEAD)
+ifeq ($(origin CI_COMMIT_REF_NAME), undefined)
+CI_COMMIT_REF_NAME := $(shell git symbolic-ref --short HEAD)
 endif
+
+CI_COMMIT_REF_NAME_FIX=$(subst /,-,$(CI_COMMIT_REF_NAME))
 
 REGISTRY_PREFIX ?= registry.com/$(CI_PROJECT_NAMESPACE)
 
@@ -111,3 +113,22 @@ image.manifest.push.multiarch.%:
 	@echo "===========> Pushing manifest $* $(CI_PIPELINE_ID) to $(REGISTRY_PREFIX) and then remove the local manifest list"
 	REGISTRY_PREFIX=$(REGISTRY_PREFIX) PLATFROMS="$(PLATFORMS)" IMAGE=$* CI_PIPELINE_ID=$(CI_PIPELINE_ID) CI_COMMIT_REF_NAME_FIX=$(CI_COMMIT_REF_NAME_FIX) CI_PROJECT_NAME=$(CI_PROJECT_NAME)  DOCKER_CLI_EXPERIMENTAL=enabled \
 	  $(ROOT_DIR)/build/lib/create-manifest.sh -
+
+
+
+.PHONY: image.buildx.push.multiarch
+image.buildx.push.multiarch: $(addprefix image.buildx.push.multiarch., $(IMAGES))
+
+.PHONY: image.buildx.push.multiarch.%
+image.buildx.push.multiarch.%:
+	@echo "===========> Pushing manifest $* $(CI_PIPELINE_ID) to $(REGISTRY_PREFIX) and then remove the local manifest list"
+	$(MAKE) image.daemon.verify
+	$(eval IMAGE := $*)
+	@echo "===========> Building docker image $(IMAGE) $(CI_PIPELINE_ID) for $(PLATFORMS)"
+	@mkdir -p $(TMP_DIR)/$(IMAGE)
+	@cat $(ROOT_DIR)/build/docker/$(IMAGE)/Dockerfile | sed 's#FROM#FROM --platform=$$TARGETPLATFORM#g' | sed 's#$(IMAGE)#$${TARGETARCH}/$(IMAGE)#' | sed '1a ARG TARGETARCH'  > $(TMP_DIR)/$(IMAGE)/Dockerfile
+	@$(foreach var, $(PLATFORMS), $(eval ARCH = $(word 2,$(subst _, ,$(var)))) $(eval IMAGE_PLATFORM = $(subst _,/,$(var))) mkdir -p $(TMP_DIR)/$(IMAGE)/$(ARCH); cp $(OUTPUT_DIR)/$(IMAGE_PLATFORM)/$(IMAGE) $(TMP_DIR)/$(IMAGE)/$(ARCH);)
+	$(eval BUILDX_PLATFORMS := linux/arm64,linux/amd64)
+	$(eval BUILDX_SUFFIX := --platform $(BUILDX_PLATFORMS) -t $(REGISTRY_PREFIX)/$(CI_PROJECT_NAME):$(IMAGE)-$(CI_COMMIT_REF_NAME_FIX)-$(CI_PIPELINE_ID) $(TMP_DIR)/$(IMAGE))
+	$(DOCKER) buildx build $(BUILDX_SUFFIX) --push
+	@rm -rf $(TMP_DIR)/$(IMAGE)
