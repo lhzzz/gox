@@ -25,6 +25,10 @@ format:
 build:
 	@$(MAKE) go.build
 
+.PHONY: build.%
+build.%:
+	@$(MAKE) go.build.single.$*
+
 ## build.multiarch: Build source code for multiple platforms. See option PLATFORMS.
 .PHONY: build.multiarch
 build.multiarch:
@@ -68,10 +72,6 @@ buildx.multiarch:
 .PHONY: clean
 clean:
 	@$(MAKE) go.clean
-
-.PHONY: release.build
-release.build:
-	@$(MAKE) push.multiarch
 
 ## help: Show this help info.
 .PHONY: help

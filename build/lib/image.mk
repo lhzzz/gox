@@ -30,7 +30,7 @@ endif
 # Determine image files by looking into build/docker/*/Dockerfile
 IMAGES_DIR ?= $(wildcard ${ROOT_DIR}/build/docker/*)
 # Determine images names by stripping out the dir names
-IMAGES ?= $(filter-out tools,$(foreach image,${IMAGES_DIR},$(notdir ${image})))
+IMAGES ?= $(filter-out README.md,$(foreach image,${IMAGES_DIR},$(notdir ${image})))
 
 ifeq (${IMAGES},)
   $(error Could not determine IMAGES, set ROOT_DIR or run in source dir)
@@ -118,6 +118,7 @@ image.manifest.push.multiarch.%:
 
 .PHONY: image.buildx.push.multiarch
 image.buildx.push.multiarch: $(addprefix image.buildx.push.multiarch., $(IMAGES))
+	@$(foreach var, $(IMAGES), echo $(REGISTRY_PREFIX)/$(CI_PROJECT_NAME):$(var)-$(CI_COMMIT_REF_NAME_FIX)-$(CI_PIPELINE_ID))
 
 .PHONY: image.buildx.push.multiarch.%
 image.buildx.push.multiarch.%:

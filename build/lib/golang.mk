@@ -42,7 +42,12 @@ go.build.%:
 	@CGO_ENABLED=0 GOOS=$(OS) GOARCH=$(ARCH) $(GO) build -o $(OUTPUT_DIR)/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT) -ldflags "$(GO_LDFLAGS)" $(ROOT_PACKAGE)/cmd/$(COMMAND)
 
 .PHONY: go.build
-go.build: go.build.verify $(addprefix go.build., $(addprefix $(PLATFORM)., $(BINS)))
+go.build: go.build.verify $(addprefix go.build., $(addprefix $(PLATFORM)., $(BINS))) 
+	@ls -l $(OUTPUT_DIR)/$(OS)/$(ARCH)/
+
+.PHONY: go.build.single.% 
+go.build.single.%:	go.build.verify $(addprefix go.build., $(addprefix $(PLATFORM)., %))
+	@ls -l $(OUTPUT_DIR)/$(subst _,/,$(PLATFORM))/
 
 .PHONY: go.build.multiarch
 go.build.multiarch: go.build.verify $(foreach p,$(PLATFORMS),$(addprefix go.build., $(addprefix $(p)., $(BINS))))
