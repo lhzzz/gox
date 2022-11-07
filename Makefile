@@ -1,5 +1,5 @@
 .PHONY: all
-all: format build
+all: format proto build
 
 # ==============================================================================
 # Build options
@@ -10,15 +10,19 @@ ROOT_PACKAGE=.
 # Includes
 
 include build/lib/common.mk
+include build/lib/proto.mk
 include build/lib/golang.mk
 include build/lib/image.mk
-
 # ==============================================================================
 # Targets
 
 .PHONY: format
 format:
 	go fmt ./internal/... ./cmd/...
+
+.PHONY: proto
+proto: 
+	@$(MAKE) proto.build
 
 ## build: Build source code for host platform.
 .PHONY: build
