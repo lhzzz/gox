@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
+	"gorm.io/plugin/dbresolver"
 	gormopentracing "gorm.io/plugin/opentracing"
 )
 
@@ -38,8 +39,10 @@ func OpenDB(opt ...Option) (*gorm.DB, error) {
 		err error
 	)
 	switch opts.dialect {
+	case TIDB:
+		fallthrough
 	case MySQL:
-		db, err = gorm.Open(mysql.Open(opts.MySQLDSN()), &gorm.Config{
+		db, err = gorm.Open(mysql.Open(opts.mysqlOptions.MasterDSN()), &gorm.Config{
 			Logger: logger,
 			NamingStrategy: schema.NamingStrategy{
 				SingularTable: opts.sigularTable,
@@ -48,6 +51,16 @@ func OpenDB(opt ...Option) (*gorm.DB, error) {
 			PrepareStmt:            true,
 			AllowGlobalUpdate:      true,
 		})
+		if len(opts.mysqlOptions.Slaves) > 0 {
+			dialectors := make([]gorm.Dialector, 0)
+			for _, dsn := range opts.mysqlOptions.SlaveDSNs() {
+				dialectors = append(dialectors, mysql.Open(dsn))
+			}
+			err = db.Use(dbresolver.Register(dbresolver.Config{
+				Replicas: dialectors,
+				Policy:   dbresolver.RandomPolicy{},
+			}))
+		}
 	default:
 		return nil, errors.New("not support dialect")
 	}

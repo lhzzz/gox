@@ -10,11 +10,22 @@ import (
 func TestOpenDB(t *testing.T) {
 	db, err := OpenDB(
 		MysqlOptions(MySQLOptions{
-			User:     "dev",
-			Password: "123456",
-			Host:     "10.0.1.147",
-			Port:     "3306",
-			Database: "testDB",
+			Master: MySQLDSNConfig{
+				User:     "dev",
+				Password: "123456",
+				Host:     "10.0.1.147",
+				Port:     "30100",
+				Database: "testDB",
+			},
+			Slaves: []MySQLDSNConfig{
+				{
+					User:     "root",
+					Password: "root",
+					Host:     "127.0.0.1",
+					Port:     "3306",
+					Database: "testDB",
+				},
+			},
 		}),
 		DebugMode(),
 		SigularTable(),

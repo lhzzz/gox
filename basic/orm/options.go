@@ -6,15 +6,25 @@ type DBType string
 
 const (
 	MySQL DBType = "MYSQL"
+	TIDB  DBType = "TIDB"
 )
 
+func (d DBType) String() string {
+	return string(d)
+}
+
 // MySQLOptions
-type MySQLOptions struct {
+type MySQLDSNConfig struct {
 	User     string
 	Password string
 	Host     string
 	Port     string
 	Database string
+}
+
+type MySQLOptions struct {
+	Master MySQLDSNConfig
+	Slaves []MySQLDSNConfig
 }
 
 type dbOption struct {
@@ -42,14 +52,33 @@ var defaultDbOptions = dbOption{
 	maxLifetime:         time.Hour,
 }
 
-func (do *dbOption) MySQLDSN() string {
-	return do.mysqlOptions.User + ":" + do.mysqlOptions.Password + "@tcp(" + do.mysqlOptions.Host + ":" + do.mysqlOptions.Port + ")/" + do.mysqlOptions.Database + "?charset=utf8mb4&parseTime=true&loc=Local"
+func (mdo *MySQLDSNConfig) DSN() string {
+	return mdo.User + ":" + mdo.Password + "@tcp(" + mdo.Host + ":" + mdo.Port + ")/" + mdo.Database + "?charset=utf8mb4&parseTime=true&loc=Local"
+}
+
+func (do *MySQLOptions) MasterDSN() string {
+	return do.Master.DSN()
+}
+
+func (do *MySQLOptions) SlaveDSNs() []string {
+	res := make([]string, len(do.Slaves))
+	for i := 0; i < len(do.Slaves); i++ {
+		res[i] = do.Slaves[i].DSN()
+	}
+	return res
 }
 
 // MysqlOptions
 func MysqlOptions(options MySQLOptions) Option {
 	return func(o *dbOption) {
 		o.dialect = MySQL
+		o.mysqlOptions = options
+	}
+}
+
+func TidbOptions(options MySQLOptions) Option {
+	return func(o *dbOption) {
+		o.dialect = TIDB
 		o.mysqlOptions = options
 	}
 }

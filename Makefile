@@ -1,5 +1,5 @@
 .PHONY: all
-all: format proto build
+all: format build
 
 # ==============================================================================
 # Build options
