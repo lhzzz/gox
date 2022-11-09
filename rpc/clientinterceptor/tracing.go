@@ -20,12 +20,14 @@ func TraceInterceptor(ctx context.Context, method string, req, reply interface{}
 	ctx, span := startSpan(ctx, method, cc.Target())
 	defer span.Finish()
 
+	trailer := metadata.MD{}
+	opts = append(opts, grpc.Trailer(&trailer))
 	err := invoker(ctx, method, req, reply, cc, opts...)
 	if err != nil {
 		otgrpc.SetSpanTags(span, err, true)
 		span.LogFields(log.String(eventKey, "error"), log.String(messageKey, err.Error()))
 	}
-	return nil
+	return err
 }
 
 func startSpan(ctx context.Context, method, target string) (context.Context, opentracing.Span) {

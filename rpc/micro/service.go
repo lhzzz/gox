@@ -46,17 +46,24 @@ func newService(app Application, opts ...Option) Service {
 		pprof.Serve(options.pprofListenAddr)
 	}
 
-	unaryInterceptors := []grpc.UnaryServerInterceptor{
+	unaryInterceptors := []grpc.UnaryServerInterceptor{}
+	streamInterceptors := []grpc.StreamServerInterceptor{}
+
+	if len(options.openTraceAddress) > 0 {
+		trace.InitOpentracing(options.serverName, options.openTraceAddress)
+		unaryInterceptors = append(unaryInterceptors, serverinterceptor.UnaryOpentracingInterceptor())
+		streamInterceptors = append(streamInterceptors, serverinterceptor.StreamOpentracingInterceptor())
+	}
+	unaryInterceptors = append(unaryInterceptors,
 		serverinterceptor.UnaryGenerateMetadataInterceptor,
 		serverinterceptor.UnaryCrashInterceptor,
 		serverinterceptor.UnaryErrorInterceptor,
-		serverinterceptor.UnarySlowlogInterceptor(),
-	}
-	streamInterceptors := []grpc.StreamServerInterceptor{
+		serverinterceptor.UnarySlowlogInterceptor())
+
+	streamInterceptors = append(streamInterceptors,
 		serverinterceptor.StreamGenerateMetadataInterceptor,
 		serverinterceptor.StreamCrashInterceptor,
-		serverinterceptor.StreamErrorInterceptor,
-	}
+		serverinterceptor.StreamErrorInterceptor)
 
 	if options.timeout > 0 {
 		unaryInterceptors = append(unaryInterceptors, serverinterceptor.UnaryTimeoutInterceptor(options.timeout))
@@ -70,12 +77,6 @@ func newService(app Application, opts ...Option) Service {
 	if options.breaker != nil {
 		unaryInterceptors = append(unaryInterceptors, serverinterceptor.UnaryBreakerInterceptor(options.breaker))
 		streamInterceptors = append(streamInterceptors, serverinterceptor.StreamBreakerInterceptor(options.breaker))
-	}
-
-	if len(options.openTraceAddress) > 0 {
-		trace.InitOpentracing(options.serverName, options.openTraceAddress)
-		unaryInterceptors = append(unaryInterceptors, serverinterceptor.UnaryOpentracingInterceptor())
-		streamInterceptors = append(streamInterceptors, serverinterceptor.StreamOpentracingInterceptor())
 	}
 
 	grpcOptions := []grpc.ServerOption{}
