@@ -32,6 +32,7 @@ require (
 
 require (
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
+	github.com/minio/minio-go/v6 v6.0.57
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	gorm.io/plugin/dbresolver v1.3.0
 )
