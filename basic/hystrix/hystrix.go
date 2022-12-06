@@ -71,6 +71,14 @@ func Go(name string, run runFunc, fallback fallbackFunc) chan error {
 //
 // Define a fallback function if you want to define some code to execute during outages.
 func GoC(ctx context.Context, name string, run runFuncC, fallback fallbackFuncC) chan error {
+	/*
+		hystrix core
+		1、 metric collector - 时间窗口，统计每秒请求的成功率
+			1.1 map bucket: key为unix时间戳， value为collector，分为number型和time型 number用于成功/失败的统计，time用于耗时的统计
+		2、 execute pool - 控制并发数量（限流
+			2.1 tickets chan 用于限流， 每个请求需要获取到chan中的令牌则正常执行，没有获取到则直接返回，报错限流
+				条件变量回收ticket
+	*/
 	cmd := &command{
 		run:      run,
 		fallback: fallback,
