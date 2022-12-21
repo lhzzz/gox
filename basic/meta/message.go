@@ -13,7 +13,7 @@ const (
 	kMetadataKeyRequestID string = "requestid"
 )
 
-func GetReuqestId(ctx context.Context) (requestId string) {
+func GetRequestId(ctx context.Context) (requestId string) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return

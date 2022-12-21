@@ -23,7 +23,7 @@ func (a *app) Regist(s *grpc.Server) {
 }
 
 func (a *app) Get(ctx context.Context, req *pb.Request) (*pb.Response, error) {
-	logrus.WithField("requestId", meta.GetReuqestId(ctx)).Info("req:", req)
+	logrus.WithField("requestId", meta.GetRequestId(ctx)).Info("req:", req)
 	resp := &pb.Response{}
 	if req.Msg == "slow" {
 		time.Sleep(1 * time.Second)

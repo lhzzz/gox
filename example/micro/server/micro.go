@@ -47,7 +47,7 @@ func main() {
 }
 
 func (a *app) Get(ctx context.Context, req *demo.Request) (*demo.Response, error) {
-	logrus.WithField("requestId", meta.GetReuqestId(ctx)).Info("req:", req)
+	logrus.WithField("requestId", meta.GetRequestId(ctx)).Info("req:", req)
 	resp := &demo.Response{}
 	if req.Msg == "slow" {
 		time.Sleep(1 * time.Second)
