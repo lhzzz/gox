@@ -2,6 +2,7 @@ package serverinterceptor
 
 import (
 	"context"
+	"runtime"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -36,6 +37,13 @@ func handleCrash(handler func(interface{})) {
 }
 
 func toPanicError(ctx context.Context, r interface{}) error {
-	log.RpcPanicf(ctx, " %+v\n", r)
+	const size = 64 << 10
+	stacktrace := make([]byte, size)
+	stacktrace = stacktrace[:runtime.Stack(stacktrace, false)]
+	if _, ok := r.(string); ok {
+		log.RpcPanicf(ctx, "Observed a panic: %s\n%s", r, stacktrace)
+	} else {
+		log.RpcPanicf(ctx, "Observed a panic: %#v (%v)\n%s", r, r, stacktrace)
+	}
 	return status.Error(codes.Internal, "panic")
 }
