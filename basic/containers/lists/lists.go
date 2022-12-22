@@ -6,6 +6,7 @@ import (
 
 type List[T comparable] interface {
 	containers.Container[T]
+	containers.Enumerable[int, T]
 
 	Add(values ...T)
 	Remove(index int)
