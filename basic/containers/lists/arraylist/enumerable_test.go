@@ -31,15 +31,17 @@ func TestFind(t *testing.T) {
 func TestEach(t *testing.T) {
 	list := New(1, 2, 3, 4, 5, 6, 7)
 	sum := 0
-	list.Each(func(index, value int) {
+	list.Each(func(value int) bool {
 		sum += value
+		return true
 	})
 	t.Log(sum)
 
 	list2 := New("a", "b", "c", "d")
 	str := ""
-	list2.Each(func(index int, value string) {
+	list2.Each(func(value string) bool {
 		str += value
+		return true
 	})
 	t.Log(str)
 }

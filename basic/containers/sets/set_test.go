@@ -8,7 +8,7 @@ import (
 )
 
 func TestThreadsafeSet(t *testing.T) {
-	s := New(true)
+	s := New[int](true)
 
 	s.Add(1, 1, 2, 3, 4, 5)
 	assert.Equal(t, s.Size(), 5)
@@ -21,10 +21,10 @@ func TestThreadsafeSet(t *testing.T) {
 	assert.Equal(t, s.Size(), 3)
 
 	s.Clear() // s nil
-	assert.True(t, s.IsEmpty())
+	assert.True(t, s.Empty())
 
 	s.Add(3, 4, 5) // s [3,4,5]
-	s2 := New(true)
+	s2 := New[int](true)
 	s2.Add(3, 4, 5) // s2 [3,4,5]
 
 	assert.True(t, s.IsEqual(s2))
@@ -33,11 +33,11 @@ func TestThreadsafeSet(t *testing.T) {
 
 	assert.True(t, s.IsSubset(s2))
 	assert.True(t, s2.IsSuperset(s))
-	s.Each(func(i interface{}) bool {
+	s.Each(func(i int) bool {
 		t.Log(i)
 		return true
 	})
-	t.Log(s2.List()...)
+	t.Log(s2.Values())
 	c := s.Copy()
 	assert.True(t, s.IsEqual(c))
 
@@ -49,23 +49,23 @@ func TestThreadsafeSet(t *testing.T) {
 	assert.True(t, s.Size() == 1)
 
 	s = s.Union(s2) // s: [3,4,5,7]
-	us := New(true)
+	us := New[int](true)
 	us.Add(3, 4, 5, 7)
 	assert.True(t, s.IsEqual(us))
 
 	ds := s.Difference(s2) // ds: 3
 	t.Log(ds.String())
-	dss := New(true)
+	dss := New[int](true)
 	dss.Add(3)
 	assert.True(t, ds.IsEqual(dss))
 
 	is := s.Intersect(ds) // s [3,4,5,7] ds[3]
-	s3 := New(true)
+	s3 := New[int](true)
 	s3.Add(3)
 	assert.True(t, is.IsEqual(s3))
 
 	iss := s.Intersects(s2, ds) //s [3,4,5,7] s2 [4,5,7] ds [3] = iss nil
-	assert.True(t, iss.IsEmpty())
+	assert.True(t, iss.Empty())
 
 	//test concurency
 	var wg sync.WaitGroup
@@ -91,9 +91,8 @@ func TestThreadsafeSet(t *testing.T) {
 }
 
 func TestNonThreadsafeSet(t *testing.T) {
-	s := New(false)
+	s := New(false, 1, 1, 2, 3, 4, 5)
 
-	s.Add(1, 1, 2, 3, 4, 5)
 	assert.Equal(t, s.Size(), 5)
 
 	s.Remove(1, 2) // s [3,4,5]
@@ -104,11 +103,10 @@ func TestNonThreadsafeSet(t *testing.T) {
 	assert.Equal(t, s.Size(), 3)
 
 	s.Clear() // s nil
-	assert.True(t, s.IsEmpty())
+	assert.True(t, s.Empty())
 
-	s.Add(3, 4, 5) // s [3,4,5]
-	s2 := New(false)
-	s2.Add(3, 4, 5) // s2 [3,4,5]
+	s.Add(3, 4, 5)            // s [3,4,5]
+	s2 := New(false, 3, 4, 5) // s2 [3,4,5]
 
 	assert.True(t, s.IsEqual(s2))
 
@@ -116,11 +114,11 @@ func TestNonThreadsafeSet(t *testing.T) {
 
 	assert.True(t, s.IsSubset(s2))
 	assert.True(t, s2.IsSuperset(s))
-	s.Each(func(i interface{}) bool {
+	s.Each(func(i int) bool {
 		t.Log(i)
 		return false
 	})
-	t.Log(s2.List()...)
+	t.Log(s2.Values())
 	c := s.Copy()
 	assert.True(t, s.IsEqual(c))
 
@@ -132,23 +130,20 @@ func TestNonThreadsafeSet(t *testing.T) {
 	assert.True(t, s.Size() == 1)
 
 	s = s.Union(s2) // s: [3,4,5,7]
-	us := New(false)
-	us.Add(3, 4, 5, 7)
+	us := New(false, 3, 4, 5, 7)
 	assert.True(t, s.IsEqual(us))
 
 	ds := s.Difference(s2) // ds: 3
 	t.Log(ds.String())
-	dss := New(false)
-	dss.Add(3)
+	dss := New(false, 3)
 	assert.True(t, ds.IsEqual(dss))
 
 	is := s.Intersect(ds) // s [3,4,5,7] ds[3]
-	s3 := New(false)
-	s3.Add(3)
+	s3 := New(false, 3)
 	assert.True(t, is.IsEqual(s3))
 
 	iss := s.Intersects(s2, ds) //s [3,4,5,7] s2 [4,5,7] ds [3] = iss nil
-	assert.True(t, iss.IsEmpty())
+	assert.True(t, iss.Empty())
 
 	t.Log(s)
 	//will carsh

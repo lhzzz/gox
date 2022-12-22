@@ -19,8 +19,10 @@ func (l *List[T]) Find(value T) containers.Iterator[T] {
 	return l.End()
 }
 
-func (l *List[T]) Each(f func(index int, value T)) {
+func (l *List[T]) Each(f func(value T) bool) {
 	for it := l.Begin(); it != l.End(); it = it.Next() {
-		f(it.Index(), it.Value())
+		if !f(it.Value()) {
+			break
+		}
 	}
 }
