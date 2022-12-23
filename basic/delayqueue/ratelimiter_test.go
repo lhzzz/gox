@@ -8,7 +8,7 @@ import (
 )
 
 func TestExponentialFailureRateLimiter(t *testing.T) {
-	limiter := NewExponentialFailureRateLimiter(1*time.Millisecond, 1*time.Second)
+	limiter := NewExponentialFailureRateLimiter[string](1*time.Millisecond, 1*time.Second)
 
 	assert.EqualValues(t, limiter.When("one"), 1*time.Millisecond)
 	assert.EqualValues(t, limiter.When("one"), 2*time.Millisecond)
@@ -27,7 +27,7 @@ func TestExponentialFailureRateLimiter(t *testing.T) {
 }
 
 func TestExponentialFailureRateLimiterOverFlow(t *testing.T) {
-	limiter := NewExponentialFailureRateLimiter(1*time.Millisecond, 1000*time.Second)
+	limiter := NewExponentialFailureRateLimiter[string](1*time.Millisecond, 1000*time.Second)
 	for i := 0; i < 5; i++ {
 		limiter.When("one")
 	}
@@ -38,7 +38,7 @@ func TestExponentialFailureRateLimiterOverFlow(t *testing.T) {
 	}
 	assert.EqualValues(t, limiter.When("overflow1"), 1000*time.Second)
 
-	limiter = NewExponentialFailureRateLimiter(1*time.Minute, 1000*time.Hour)
+	limiter = NewExponentialFailureRateLimiter[string](1*time.Minute, 1000*time.Hour)
 	for i := 0; i < 2; i++ {
 		limiter.When("two")
 	}
@@ -51,7 +51,7 @@ func TestExponentialFailureRateLimiterOverFlow(t *testing.T) {
 }
 
 func TestItemFastSlowRateLimiter(t *testing.T) {
-	limiter := NewFastSlowRateLimiter(5*time.Millisecond, 10*time.Second, 3)
+	limiter := NewFastSlowRateLimiter[string](5*time.Millisecond, 10*time.Second, 3)
 
 	assert.EqualValues(t, limiter.When("one"), 5*time.Millisecond)
 	assert.EqualValues(t, limiter.When("one"), 5*time.Millisecond)

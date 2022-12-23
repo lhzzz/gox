@@ -7,11 +7,11 @@ import (
 	"singer.com/util/clock"
 )
 
-type BaseQueue interface {
-	Add(item interface{})
+type BaseQueue[T comparable] interface {
+	Add(item T)
 	Len() int
-	Get() (item interface{}, shutdown bool)
-	Done(item interface{})
+	Get() (item T, shutdown bool)
+	Done(item T)
 	ShutDown()
 	ShutDownWithDrain()
 	ShuttingDown() bool
@@ -25,20 +25,20 @@ const defaultUnfinishedWorkUpdatePeriod = 500 * time.Millisecond
  processing []					processing 	[[1]]			processing	[]
 */
 // baseQueue is a work queue.
-type baseQueue struct {
+type baseQueue[T comparable] struct {
 	// queue defines the order in which we will work on items. Every
 	// element of queue should be in the dirty set and not in the
 	// processing set.
-	queue []it
+	queue []T
 
 	// dirty defines all of the items that need to be processed.
-	dirty set
+	dirty set[T]
 
 	// Things that are currently being processed are in the processing set.
 	// These things may be simultaneously in the dirty set. When we finish
 	// processing something and remove it from this set, we'll check if
 	// it's in the dirty set, and if so, add it to the queue.
-	processing set
+	processing set[T]
 
 	cond *sync.Cond
 
@@ -50,19 +50,18 @@ type baseQueue struct {
 }
 
 type empty struct{}
-type it interface{}
-type set map[it]empty
+type set[T comparable] map[T]empty
 
-func NewBaseQueue() BaseQueue {
+func NewBaseQueue[T comparable]() BaseQueue[T] {
 	rc := clock.RealClock{}
-	return newQueue(rc, defaultUnfinishedWorkUpdatePeriod)
+	return newQueue[T](rc, defaultUnfinishedWorkUpdatePeriod)
 }
 
-func newQueue(c clock.WithTicker, updatePeriod time.Duration) *baseQueue {
-	t := &baseQueue{
+func newQueue[T comparable](c clock.WithTicker, updatePeriod time.Duration) *baseQueue[T] {
+	t := &baseQueue[T]{
 		clock:                      c,
-		dirty:                      set{},
-		processing:                 set{},
+		dirty:                      set[T]{},
+		processing:                 set[T]{},
 		cond:                       sync.NewCond(&sync.Mutex{}),
 		unfinishedWorkUpdatePeriod: updatePeriod,
 	}
@@ -70,7 +69,7 @@ func newQueue(c clock.WithTicker, updatePeriod time.Duration) *baseQueue {
 }
 
 // Add marks item as needing processing.
-func (q *baseQueue) Add(item interface{}) {
+func (q *baseQueue[T]) Add(item T) {
 	q.cond.L.Lock()
 	defer q.cond.L.Unlock()
 	if q.shuttingDown {
@@ -92,7 +91,7 @@ func (q *baseQueue) Add(item interface{}) {
 // Len returns the current queue length, for informational purposes only. You
 // shouldn't e.g. gate a call to Add() or Get() on Len() being a particular
 // value, that can't be synchronized properly.
-func (q *baseQueue) Len() int {
+func (q *baseQueue[T]) Len() int {
 	q.cond.L.Lock()
 	defer q.cond.L.Unlock()
 	return len(q.queue)
@@ -101,20 +100,21 @@ func (q *baseQueue) Len() int {
 // Get blocks until it can return an item to be processed. If shutdown = true,
 // the caller should end their goroutine. You must call Done with item when you
 // have finished processing it.
-func (q *baseQueue) Get() (item interface{}, shutdown bool) {
+func (q *baseQueue[T]) Get() (item T, shutdown bool) {
 	q.cond.L.Lock()
 	defer q.cond.L.Unlock()
 	for len(q.queue) == 0 && !q.shuttingDown {
 		q.cond.Wait()
 	}
+	var zero T
 	if len(q.queue) == 0 {
 		// We must be shutting down.
-		return nil, true
+		return zero, true
 	}
 
 	item = q.queue[0]
 	// The underlying array still exists and reference this object, so the object will not be garbage collected.
-	q.queue[0] = nil
+	q.queue[0] = zero
 	q.queue = q.queue[1:]
 
 	q.processing.insert(item)
@@ -126,7 +126,7 @@ func (q *baseQueue) Get() (item interface{}, shutdown bool) {
 // Done marks item as done processing, and if it has been marked as dirty again
 // while it was being processed, it will be re-added to the queue for
 // re-processing.
-func (q *baseQueue) Done(item interface{}) {
+func (q *baseQueue[T]) Done(item T) {
 	q.cond.L.Lock()
 	defer q.cond.L.Unlock()
 
@@ -141,7 +141,7 @@ func (q *baseQueue) Done(item interface{}) {
 
 // ShutDown will cause q to ignore all new items added to it and
 // immediately instruct the worker goroutines to exit.
-func (q *baseQueue) ShutDown() {
+func (q *baseQueue[T]) ShutDown() {
 	q.setDrain(false)
 	q.shutdown()
 }
@@ -155,7 +155,7 @@ func (q *baseQueue) ShutDown() {
 // indefinitely. It is, however, safe to call ShutDown after having called
 // ShutDownWithDrain, as to force the queue shut down to terminate immediately
 // without waiting for the drainage.
-func (q *baseQueue) ShutDownWithDrain() {
+func (q *baseQueue[T]) ShutDownWithDrain() {
 	q.setDrain(true)
 	q.shutdown()
 	for q.isProcessing() && q.shouldDrain() {
@@ -165,7 +165,7 @@ func (q *baseQueue) ShutDownWithDrain() {
 
 // isProcessing indicates if there are still items on the work queue being
 // processed. It's used to drain the work queue on an eventual shutdown.
-func (q *baseQueue) isProcessing() bool {
+func (q *baseQueue[T]) isProcessing() bool {
 	q.cond.L.Lock()
 	defer q.cond.L.Unlock()
 	return q.processing.len() != 0
@@ -173,7 +173,7 @@ func (q *baseQueue) isProcessing() bool {
 
 // waitForProcessing waits for the worker goroutines to finish processing items
 // and call Done on them.
-func (q *baseQueue) waitForProcessing() {
+func (q *baseQueue[T]) waitForProcessing() {
 	q.cond.L.Lock()
 	defer q.cond.L.Unlock()
 	// Ensure that we do not wait on a queue which is already empty, as that
@@ -186,45 +186,45 @@ func (q *baseQueue) waitForProcessing() {
 	q.cond.Wait()
 }
 
-func (q *baseQueue) setDrain(shouldDrain bool) {
+func (q *baseQueue[T]) setDrain(shouldDrain bool) {
 	q.cond.L.Lock()
 	defer q.cond.L.Unlock()
 	q.drain = shouldDrain
 }
 
-func (q *baseQueue) shouldDrain() bool {
+func (q *baseQueue[T]) shouldDrain() bool {
 	q.cond.L.Lock()
 	defer q.cond.L.Unlock()
 	return q.drain
 }
 
-func (q *baseQueue) shutdown() {
+func (q *baseQueue[T]) shutdown() {
 	q.cond.L.Lock()
 	defer q.cond.L.Unlock()
 	q.shuttingDown = true
 	q.cond.Broadcast()
 }
 
-func (q *baseQueue) ShuttingDown() bool {
+func (q *baseQueue[T]) ShuttingDown() bool {
 	q.cond.L.Lock()
 	defer q.cond.L.Unlock()
 
 	return q.shuttingDown
 }
 
-func (s set) has(item it) bool {
+func (s set[T]) has(item T) bool {
 	_, exists := s[item]
 	return exists
 }
 
-func (s set) insert(item it) {
+func (s set[T]) insert(item T) {
 	s[item] = empty{}
 }
 
-func (s set) delete(item it) {
+func (s set[T]) delete(item T) {
 	delete(s, item)
 }
 
-func (s set) len() int {
+func (s set[T]) len() int {
 	return len(s)
 }

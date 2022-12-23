@@ -6,7 +6,7 @@ import (
 )
 
 func TestDelayQueue(t *testing.T) {
-	dq := NewDelayingQueue()
+	dq := NewDelayingQueue[int]()
 
 	dq.Add(1)
 	dq.AddAfter(2, 3*time.Second)

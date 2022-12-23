@@ -1,13 +1,14 @@
 package queue
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 	"time"
 )
 
 func TestFIFO(t *testing.T) {
-	q := NewBaseQueue()
+	q := NewBaseQueue[int]()
 	q.Add(1)
 	q.Add(2)
 	q.Add(3)
@@ -29,7 +30,7 @@ func TestFIFO(t *testing.T) {
 }
 
 func TestDuplicate(t *testing.T) {
-	q := NewBaseQueue()
+	q := NewBaseQueue[int]()
 	q.Add(1)
 	q.Add(1)
 	q.Add(1)
@@ -46,16 +47,16 @@ func TestDuplicate(t *testing.T) {
 
 func TestBasic(t *testing.T) {
 	tests := []struct {
-		queue         BaseQueue
-		queueShutDown func(BaseQueue)
+		queue         BaseQueue[string]
+		queueShutDown func(BaseQueue[string])
 	}{
 		{
-			queue:         NewBaseQueue(),
-			queueShutDown: BaseQueue.ShutDown,
+			queue:         NewBaseQueue[string](),
+			queueShutDown: BaseQueue[string].ShutDown,
 		},
 		{
-			queue:         NewBaseQueue(),
-			queueShutDown: BaseQueue.ShutDownWithDrain,
+			queue:         NewBaseQueue[string](),
+			queueShutDown: BaseQueue[string].ShutDownWithDrain,
 		},
 	}
 	for _, test := range tests {
@@ -69,7 +70,7 @@ func TestBasic(t *testing.T) {
 			go func(i int) {
 				defer producerWG.Done()
 				for j := 0; j < 10; j++ {
-					test.queue.Add(i)
+					test.queue.Add(fmt.Sprint(i))
 					time.Sleep(time.Millisecond)
 				}
 			}(i)
