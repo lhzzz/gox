@@ -15,4 +15,6 @@ type List[T comparable] interface {
 	Sort(comparator containers.Comparator[T])
 	Swap(index1, index2 int)
 	Insert(index int, values ...T)
+	Begin() containers.Iterator[T]
+	End() containers.Iterator[T]
 }
