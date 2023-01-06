@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+
+	"singer.com/basic/containers/queues"
 )
 
 type Queue[T comparable] struct {
 	values   []T
 	writeIdx int
 	readIdx  int
-	full     bool
 	cap      int
 	size     int
 	notempty *sync.Cond
@@ -18,7 +19,7 @@ type Queue[T comparable] struct {
 	lock     sync.RWMutex
 }
 
-func New[T comparable](maxSize int) *Queue[T] {
+func New[T comparable](maxSize int) queues.Queue[T] {
 	if maxSize == 0 {
 		return nil
 	}
@@ -49,7 +50,6 @@ func (q *Queue[T]) Clear() {
 	q.values = make([]T, q.cap, q.cap)
 	q.writeIdx = 0
 	q.readIdx = 0
-	q.full = false
 	q.size = 0
 }
 
@@ -73,47 +73,33 @@ func (q *Queue[T]) String() string {
 }
 
 func (q *Queue[T]) Push(value T) {
-	if q.Full() {
-		q.Pop()
+	q.lock.Lock()
+	for q.cap == q.size {
+		q.notfull.Wait()
 	}
 	q.values[q.writeIdx] = value
-	q.writeIdx = q.writeIdx + 1
+	q.writeIdx++
 	if q.writeIdx >= q.cap {
 		q.writeIdx = 0
 	}
-	if q.writeIdx == q.readIdx {
-		q.full = true
-	}
-	q.size = q.calculateSize()
+	q.size++
+	q.notempty.Signal()
+	q.lock.Unlock()
 }
 
-func (q *Queue[T]) Pop() (value interface{}, ok bool) {
-	if q.Empty() {
-		return nil, false
+func (q *Queue[T]) Pop() (value T) {
+	q.lock.Lock()
+	for q.size == 0 {
+		q.notempty.Wait()
 	}
 
-	value, ok = q.values[q.readIdx], true
-	if value != nil {
-		var zero T
-		q.values[q.readIdx] = zero
-		q.readIdx = q.readIdx + 1
-		if q.readIdx >= q.cap {
-			q.readIdx = 0
-		}
-		q.full = false
+	value = q.values[q.readIdx]
+	q.readIdx++
+	if q.readIdx >= q.cap {
+		q.readIdx = 0
 	}
-	q.size = q.size - 1
+	q.size--
+	q.notfull.Signal()
+	q.lock.Unlock()
 	return
-}
-
-func (q *Queue[T]) calculateSize() int {
-	if q.writeIdx < q.readIdx {
-		return q.cap - q.readIdx + q.writeIdx
-	} else if q.writeIdx == q.readIdx {
-		if q.full {
-			return q.cap
-		}
-		return 0
-	}
-	return q.writeIdx - q.readIdx
 }
